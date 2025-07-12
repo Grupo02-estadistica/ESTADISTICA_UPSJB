@@ -1,0 +1,54 @@
+---
+title: "semana 2 estadistica"
+format: html
+editor: visual
+---
+
+***FUNCIONES EN RStudio***
+
+Son código que permiten automatizar tareas y realizar diversas operaciones.
+
+***INSTALAR Y CARGAR PAQUETES EN R***
+
+PARA INTALAR: usar la función **install.packages()**. Nombre del paquete entre comillas **"......."**
+
+-   Paquetes isntalados en clase
+
+```{r}
+install.packages("here")
+install.packages("tidyverse")
+install.packages("survival")
+```
+
+-   Paquetes adicionales
+
+    ```{r}
+    install.packages("compiler")
+    install.packages("class")
+    install.packages("codetools")
+    install.packages("ggplot2")
+    install.packages("dplyr")
+    ```
+
+## Quarto
+
+Quarto enables you to weave together
+
+content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
