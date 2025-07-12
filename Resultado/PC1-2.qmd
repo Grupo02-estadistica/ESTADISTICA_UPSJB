@@ -1,0 +1,284 @@
+---
+title: "PC1-2"
+---
+
+## 
+
+## Instalar paquetes
+
+```{r}
+ install.packages("tidyverse") 
+ install.packages("rio") 
+ install.packages("here") 
+ install.packages("janitor") 
+ install.packages("skimr") 
+ install.packages("visdat")
+ install.packages("conflicted")
+ install.packages("DataExplorer")
+
+
+```
+
+## Cargar paquetes
+
+```{r}
+library(tidyverse)
+library(rio)
+library(here)
+library(janitor)
+library(conflicted)
+library(DataExplorer)
+
+```
+
+## Importando diabetes.csv usando el paquete rio
+
+```{r}
+datasets <- import("D:/Datos medicina/PC1-2/diabetes.csv")
+
+```
+
+## Vistazo al contenido
+
+### ¿Cuántas variables y observaciones hay?
+
+El primer número indica el número de filas, el segundo, el número de columnas.
+
+```{r}
+dim(datasets)
+```
+
+### ¿Cuantas y qué tipos de variables hay?
+
+```{r}
+str(datasets)
+```
+
+Una función similar
+
+```{r}
+dplyr::glimpse(datasets)
+```
+
+Estadísticos descriptivos y otros parámetros para exploración de datos
+
+```{r}
+skimr::skim(datasets)
+```
+
+Resumen por variable
+
+```{r}
+summary(datasets)
+```
+
+### Visualmente
+
+```{r}
+View(datasets)
+```
+
+```{r}
+visdat::vis_dat(datasets)
+```
+
+```{r}
+DataExplorer::create_report(datasets)
+```
+
+# Limpieza de datos
+
+## Paso uno: corregir los nombres de variables.
+
+Clean names es una función del paquete janitor
+
+```{r}
+datasets_1 = clean_names(datasets)
+```
+
+Nota el constraste (la función `names()` imprime los nombres de columnas de un *dataset*)
+
+```{r}
+names(datasets)
+```
+
+```{r}
+names(datasets_1)
+```
+
+## Paso dos: convertir celdas vacías a NA
+
+```{r}
+datasets_2 = mutate_if(datasets_1, is.character, list(~na_if(.,"")))
+```
+
+## Paso tres: eliminar columnas o filas vacias.
+
+```{r}
+datasets_3 = remove_empty(datasets_2, which = c("rows", "cols"))
+```
+
+## Optimizando el código
+
+### Corregir nombres, celdas vacías a NA y eliminar columnas o filas vacías.
+
+```{r}
+datasets_1 = datasets |> 
+  clean_names() |> 
+  mutate_if(is.character, list(~ na_if(., ""))) |> 
+  remove_empty(which = c("rows", "cols"))
+```
+
+## Paso 4: corregir errores ortográficos o valores inválidos
+
+### Inspección tabular
+
+```{r}
+datasets_1 |> count(edad) # Cambia de variable categórica
+```
+
+Transformando de data.frame a as tibble
+
+```{r}
+datasets_2 = as_tibble(datasets_1)
+```
+
+Corregir errores ortográficos usando `mutate()` y `case_when()`
+
+```{r}
+datasets_3 = datasets_2 |> 
+  mutate(diabetes_5a = case_when(
+    diabetes_5a == "positivo" ~ "Positivo", 
+    diabetes_5a == "Positivo" ~ "Positivo", 
+    diabetes_5a == "negativo" ~ "Negativo", 
+    diabetes_5a == "Negativo" ~ "Negativo",
+    TRUE ~ diabetes_5a))
+```
+
+```{r}
+datasets_3 = datasets_2 |> 
+  mutate(diabetes_5a = case_when(
+    diabetes_5a == "positivo" ~ "Positivo",
+    diabetes_5a %in% c("Negativo", "Negativ", "negativo") ~ "Negativo",
+    TRUE ~ diabetes_5a)
+    )
+```
+
+## Paso 5: Colapsar una variable categórica en menos niveles
+
+Un vistazo a la variable de interés
+
+```{r}
+datasets_3 |> count(edad)
+```
+
+Colapsar a dos categorías
+
+```{r}
+datasets_4 = datasets_3 |> 
+  mutate(edad = case_when(
+    edad %in% 21:27 ~ "21-27",  # Usamos rango de números enteros
+    edad %in% 28:81~ "> 28",   # Usamos rango de números enteros
+    TRUE ~ as.character(edad)   # Convertir a carácter en caso de que no coincida
+  ))
+
+
+```
+
+Comprobando el cambio
+
+```{r}
+datasets_4 |> count(edad)
+
+```
+
+## Paso 6: Transformar una variable
+
+Transformación a logaritmo
+
+```{r}
+summary(datasets_4$presion_sanguinea)
+```
+
+```{r}
+hist(datasets_4$presion_sanguinea)
+```
+
+```{r}
+data_diabetes_5 <- datasets_4 |>  
+  mutate(log_glucosa_2h = log(glucosa_2h + 1))
+
+```
+
+```{r}
+data_diabetes_5 |>  
+  ggplot(aes(x = log_glucosa_2h)) +  # Reemplaza 'log_imc' por 'log_glucosa_2h'
+  geom_histogram(bins = 10) +  # Ajusta el número de bins si es necesario
+  labs(y = "Frecuencia", x = "log(Glucosa 2h + 1)")  # Etiquetas de los ejes
+
+```
+
+Transformación a binario
+
+```{r}
+data_diabetes_6 = data_diabetes_5 |>  
+  mutate(
+    tiempo_desde_dx_c = case_when(
+      edad < 30 ~ "< 30",  # Categoría para menores de 30 años
+      edad >= 30 ~ ">= 30"  # Categoría para mayores o iguales a 30 años
+    )
+  ) |> 
+  mutate(
+    tiempo_desde_dx_c = factor(tiempo_desde_dx_c, levels = c("< 30", ">= 30"))  # Aseguramos que sea un factor con niveles específicos
+  )
+
+```
+
+Transformando valores a valores perdidos usando la función `na_if()`
+
+```{r}
+data_diabetes_7 = data_diabetes_6 |>  
+  mutate(glucosa_2h = na_if(glucosa_2h, -7)) 
+```
+
+Transformando valores a valores perdidos usando la función `case_when()`
+
+```{r}
+data_diabetes_7 = data_diabetes_6 |>  
+  mutate(edad = case_when(
+    edad %in% c("3", "999") ~ NA,  # Reemplazar "3" y "999" por NA en 'edad' (usamos NA sin _real_)
+    TRUE ~ edad  # Mantener los demás valores tal como están
+  ))
+
+```
+
+## Paso 7: Renombrar una variable
+
+Imprimir los nombres. ¿Cuáles necesitann cambio?
+
+```{r}
+names(data_diabetes_7)
+```
+
+Cambiando un nombre de variables
+
+```{r}
+data_diabetes_8 = data_diabetes_7 |>  
+  rename(numero_de_embarazos = num_embarazos)
+
+
+```
+
+Varios a la vez
+
+```{r}
+data_diabetes_8 <- data_diabetes_7 |>  
+  rename(historial_de_diabetes = historial_diabetes,
+         edad_del_paciente = edad)
+```
+
+Comprobando
+
+```{r}
+names(data_diabetes_8)
+```
