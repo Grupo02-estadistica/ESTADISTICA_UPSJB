@@ -1,0 +1,449 @@
+---
+title: "Regresión Lineal Simple y prueba t de Student"
+author: "Grupo 2"
+format: semana 9
+editor: 
+---
+
+# Cargar e instalar paquetes
+
+```{r}
+install.packages("car") # Para la prueba de Levene
+```
+
+```{r}
+library(tidyverse)
+library(here)
+library(rio)
+library(gtsummary)
+library(car)
+```
+
+# Cargando los datos
+
+```{r}
+data_autismo <- import(here("data", "autismo.csv"))
+```
+
+# DATA_AUTISMO
+
+El dataset data_autismo, de 292 niños ( 4 a 11 años de edad), contiene datos puntuacion 1 a la puntuacion 10, ictericia al nacer, Dx autismo, uso previo aplicacion, quien completo la prueba, diagnostico ASD.
+
+# 1 Regresión lineal simple
+
+-   ¿Existe una asoación entre la Puntuacion Total (Resultado) y la Edad (años)?
+
+El desenlace *Y* de interés para este ejercicio es la variable RESULTADO. Veamos la distribución de la variable y el promedio en en un histograma.
+
+```{r}
+data_autismo |>  
+  ggplot(aes(x = Resultado)) +
+  geom_histogram(
+    color = "white",       # Borde blanco para separar las barras
+    fill = "skyblue",      # Color de las barras
+    binwidth = 1           # Cada barra representa 1 punto
+  ) + 
+  labs(y = "Frecuencia (N° de personas)", 
+       x = "Resultado (Puntuacion)") +
+  geom_vline(
+    xintercept = mean(data_autismo$Resultado, na.rm = TRUE),
+    color = "darkred", 
+    size = 1.5
+  )
+```
+
+La linea roja, linea vertical nos ayuda a calcular la media en el histograma
+
+La media = 6.24 está marcada por la línea roja.
+
+En estos datos, el promedio la variable resultado (niños diagnosticado con autismo segun puntuacion) es:
+
+```{r}
+mean(data_autismo$Resultado, na.rm = TRUE)
+```
+
+INTERPRETACION: La media = 6.24
+
+## Notación en el método de regresión lineal simple
+
+El método de regresión lineal simple encuentra la línea que mejor se ajusta a la descripción lineal entre el resultado (puntaje total) y la edad (años), tal como se muestra en la siguiente figura
+
+```{r}
+plot(Edad ~ Resultado, data = data_autismo,
+     col = "gray", 
+     ylab = "Puntaje total (Resultado)", 
+     xlab = "Edad (años)",
+     las = 1, pch = 20,
+     font.lab = 2, font.axis = 2)
+
+# Línea de regresión
+abline(lm(Edad ~ Resultado, data = data_autismo), 
+       lwd = 2, col = "darkred")
+```
+
+![](images/clipboard-1983131600.png)
+
+INTERPRETACION:
+
+-   Los puntos están bastante dispersos alrededor de la línea de regresión. Esta dispersión indica que la edad no explica completamente las variaciones en el puntaje.
+
+-   La mayoría de los datos se concentran entre los 5 y 10 años. Hay menos observaciones en los extremos (4 y 11 años). Se observan puntajes en todo el rango de 0 a 10.
+
+-   Parece haber mayor concentración en puntajes medios (alrededor de 4-6).
+
+La ecuación siguiente ecuación describe un modelo de regresión lineal simple para 𝑌 usando un predictor continuo 𝑋. $$
+Y = \beta_0 + \beta_1 X + \epsilon
+$$
+
+## Ajustando el modelo de regresión lineal simple para nuestro problema
+
+Ajustando el modelo para nuestros datos
+
+```{r}
+modelo_ejemplo = lm(Resultado ~ Edad, data = data_autismo)
+```
+
+```{r}
+# Asegurarse de que Edad sea numérica
+data_autismo$Edad <- as.numeric(data_autismo$Edad)
+
+# Crear el modelo lineal
+modelo_autismo <- lm(Resultado ~ Edad, data = data_autismo)
+
+# Ver resumen del modelo
+summary(modelo_autismo)
+```
+
+Para ver los resultados, usamos la función summary() y dentro, el objeto modelo_ejemplo.
+
+```{r}
+summary(modelo_autismo)
+```
+
+**INTERPRETACIÓN:**
+
+En el modelo estimado. El intercepto es 5.75038 y la edad 0.07918
+
+-   Intercepto (5.750): Indica que un niño de 0 años tendría un puntaje de 5.75 en el test
+
+-   Pendiente (0.079): Por cada año adicional de edad, el puntaje en el test aumenta en promedio 0.079 puntos.
+
+-   Edad (p-valor = 0.164): El coeficiente de edad no es estadísticamente significativo (p \> 0.05). Esto significa que no hay evidencia suficiente para afirmar que la edad afecta el puntaje del test.
+
+-   Intercepto (p-valor \<2e-16): Altamente significativo
+
+-   Studio R = 0.006754: Solo el 0.68% de la variabilidad en los puntajes se explica por la edad. Esto confirma que la edad prácticamente no ayuda a predecir el resultado.
+
+## Interpretando los resultados
+
+La sección Coefficients del resultado:
+
+```{r}
+summary(modelo_autismo)$coef
+```
+
+**INTERPRETACIÓN**
+
+-   **Estimate:** 5.75037838 Este es el valor esperado de la variable dependiente cuando la edad es 0.
+
+-   **Std. Error:** 0.38486138 este es error estándar del intercepto.
+
+-   **t value:** 14.941427 Estadístico t para el intercepto.
+
+-   **Pr(\>\|t\|):** 1.047609e-37 el valor p es muy pequeño, indica que el intercepto es altamente significativo.
+
+**EDAD:**
+
+-   **Estimate:** 0.07917542 → Por cada año adicional de edad, se espera que la variable dependiente aumenta en aproximadamente 0.079 unidades.
+
+-   **Std. Error:** 0.05677472 → Error estándar del coeficiente de edad.
+
+-   **t value:** 1.394554 → Estadístico t para el coeficiente de edad.
+
+-   **Pr(\>\|t\|):** 0.1642326 (≈ 0.16) → Valor p no significativo
+
+El p-valor es menor a 0.05, entonces se rechaza la hipótesis nula y se acepta la hipotesis alterna.
+
+## reportar los resultados del ajuste del modelo de regresión lineal simple
+
+Adicionalmente, es buena idea presentar los resultados en un tabla.
+
+```{r}
+theme_gtsummary_language("es")
+
+tabla_reporte <- modelo_ejemplo |> 
+  tbl_regression(intercept = T,
+                 estimate_fun = function(x) style_sigfig(x, digits = 4),
+                 pvalue_fun   = function(x) style_pvalue(x, digits = 3),
+                 label        = list(Resultado ~ "Puntuacion Total  (Resultado)")) |>
+  modify_caption("Puntuacion total (Resultado) en función de la edad de los niños")
+
+tabla_reporte
+```
+
+**Exportamos la tabla**
+
+```{r}
+tabla_reporte |> 
+  as_flex_table()  |> 
+  flextable::save_as_docx(path = "tabla_reporte.docx")
+```
+
+# 2 Prueba t de Student para muestras independientes
+
+-   Cuando los dos grupos de muestras a comparar han sido muestreadas de una distribución normal. Aquí podemos usar la prueba de Shapiro-Wilk.
+
+Usualmente, la hipótesis de la prueba t de Student son:
+
+-   Hipótesis nula (H₀): No hay diferencia entre las medias de los dos grupos. $$
+    H_0: \mu_1 = \mu_2
+    $$
+-   Hipótesis alternativa (H₁): Hay una diferencia entre las medias de los dos grupos. $$
+    H_1: \mu_1 \neq \mu_2
+    $$
+
+## Datos 
+
+El dataset data_autismo, de 292 niños ( 4 a 11 años de edad), contiene datos puntuacion 1 a la puntuacion 10, ictericia al nacer, Dx autismo, uso previo aplicacion, quien completo la prueba, diagnostico ASD.
+
+## Resumen y visualización
+
+Resumen
+
+Antes de realizar la prueba t de Student es importante conocer la distribución de los datos e identificar si hay valores perdidos o atípicos. Empecemos por el resumen:
+
+```{r}
+group_by(data_autismo, Genero) |> 
+  summarise(
+    count = n(),
+    mean = mean(Resultado, na.rm = TRUE),
+    sd = sd(Resultado, na.rm = TRUE)
+  )
+```
+
+1.  Hay 84 niñas y 208 niños en el dataset. Hay mas del doble de participantes masculinos que femeninos
+
+    Media:
+
+    -   Niñas: promedio ≈ 6.08
+
+    -    Niños: promedio ≈ 6.30
+
+        Aunque los niños tienen un puntaje levemente más alto, la diferencia es pequeña (0.22 puntos).
+
+2.   Desviación estándar (`sd`):
+
+    -   Ambas desviaciones estándar son similares (2.3), lo que indica que la variabilidad en los resultados es comparable entre géneros. Esto nos indica que no hay grandes diferencias en la dispersión de los puntajes.
+
+Visualización
+
+```{r}
+data_autismo |>  
+  filter(!is.na(Genero)& !is.na(Resultado))  |> 
+  ggplot(aes(y = Resultado, x = Genero)) +
+  geom_boxplot() +
+  labs(y = "Puntaje total (Resultado)", x = "Genero")
+```
+
+**INTERPRETACIÓN:**
+
+-   La distribución de puntajes es significativamente normal, especialmente en el genero masculino
+
+<!-- -->
+
+-   En el genero masculino tienden a mostrar puntajes más altos pero con mayor variabilidad
+
+-   El genero Femenino presenta una distribución más homogénea
+
+## Pruebas preliminares para evaluar los supuestos de la prueba t de Student
+
+Supuesto 1: los datos deben haber sido muestreados de una distribución normal.
+
+Para esto, usamos la prueba de Shapiro-wilk.
+
+```{r}
+data_autismo |> 
+  filter(Genero == "Masculino") |> 
+  summarise(shapiro = list(shapiro.test(Resultado))) |> 
+  pull(shapiro)
+```
+
+INTERPRETACION
+
+p-valor: = 0.00002214
+
+-   El valor de p es mucho menor que 0.05, lo que indica que los datos no siguen una distribución normal para el genero masculino. Rechazamos la hipótesis nula y aceptamos la hipotesis alterna
+
+```{r}
+data_autismo |> 
+  filter(Genero == "Femenino") |> 
+  summarise(shapiro = list(shapiro.test(Resultado))) |> 
+  pull(shapiro)
+```
+
+INTERPRETACION:
+
+p-valor = 0.0161
+
+-   El valor de p es también menor que 0.05, aunque no es tan extremo como en el grupo masculino. Aun así, también se rechaza la normalidad para el grupo femenino.
+
+## Realizamos la prueba t para nuestros datos.
+
+```{r}
+t.test(Resultado ~ Genero, data = data_autismo, var.equal = TRUE)
+```
+
+**INTERPRETACIÓN:**
+
+-   t = -0.74271: estadístico de la prueba t.
+
+-   df = 290: grados de libertad.
+
+-   p-value = 0.4583
+
+<!-- -->
+
+-    Intervalo de confianza (95%) para la diferencia entre medias
+
+-    Media grupo Femenino: 6.0833
+
+-   Media grupo Masculino: 6.3029
+
+    El valor p = 0.4583 es mucho mayor que 0.05. No hay evidencia estadísticamente significativa de una diferencia en los promedios entre niños y niñas.
+
+# Análisis de Varianza (ANOVA)
+
+## Datos 
+
+El dataset data_autismo, de 292 niños ( 4 a 11 años de edad), contiene datos puntuacion 1 a la puntuacion 10, ictericia al nacer, Dx autismo, uso previo aplicacion, quien completo la prueba, diagnostico ASD.
+
+## 3.3 Resumen y visualización
+
+Resumen
+
+Antes de realizar la prueba de ANOVA es importante conocer la distribución de los datos e identificar si hay atípicos. Empecemos por el resumen:
+
+```{r}
+group_by(data_autismo,Ictericia_al_nacer) |> 
+  summarise(
+    count = n(),
+    mean = mean(Resultado, na.rm = TRUE),
+    sd = sd(Resultado, na.rm = TRUE),
+    min = min(Resultado, na.rm = TRUE),
+    max = max(Resultado, na.rm = TRUE)
+  )
+```
+
+-   INTERPRETACION
+
+    -    212 niños no tuvieron ictericia al nacer.
+
+    -   80 niños sí tuvieron ictericia.
+
+    Promedio del resultado:
+
+    -   Sin ictericia: promedio = 6.17
+
+    -   Con ictericia: promedio = 6.41
+
+        Hay una ligera diferencia en el promedio ( 0.24 puntos más en el grupo con ictericia), pero es pequeña.
+
+    Dispersión (desviación estándar):
+
+    -   Ambos grupos tienen una dispersión similar (entre 2.1 y 2.4), lo que indica que la variabilidad de los puntajes es comparable.
+
+    Segun el puntaje:
+
+    Sin ictericia: van de 0 a 10.
+
+    Con ictericia: van de 1 a 10 (no hay ceros en este grupo).
+
+    Ambos grupos presentan medias y dispersiones bastante similares.
+
+Visualización
+
+```{r}
+data_autismo |>  
+  filter(!is.na(Ictericia_al_nacer)& !is.na(Resultado))  |> 
+  ggplot(aes(y = Resultado, x = Ictericia_al_nacer)) +
+  geom_boxplot() +
+  labs(y = "Puntuacion Total (resultado)", x = "Icteria al nacer")
+```
+
+No hay una gran diferencia entre los niños que tuvieron ictericia al nacer y los que no, en cuanto a su puntuación total. Ambos grupos muestran una distribución similar en cuanto a mediana, rango intercuartílico y valores extremos.
+
+## 3.4 Pruebas preliminares para evaluar los supuestos del ANOVA
+
+```{r}
+data_autismo <- data_autismo |>
+    mutate(Quien_completa_prueba = as.factor(Quien_completa_prueba))
+```
+
+Prueba de Shapiro-wilk.
+
+```{r}
+data_autismo |> 
+  filter(Quien_completa_prueba == "Padre/Madre") |> 
+  summarise(shapiro = list(shapiro.test(Resultado))) |> 
+  pull(shapiro)
+```
+
+p-value = 1.162e-06 (es decir, 0.000001162)
+
+-   La hipótesis nula del test de Shapiro-Wilk es que los datos siguen una distribución normal.
+
+<!-- -->
+
+-    El valor p es mucho menor que 0.05, por lo tanto, se rechaza la hipótesis nula.
+
+    El puntaje resultado no sigue una distribución normal en el grupo donde el cuestionario fue respondido por padre o madre.
+
+```{r}
+data_autismo |> 
+  filter(Quien_completa_prueba == "Familiar") |> 
+  summarise(shapiro = list(shapiro.test(Resultado))) |> 
+  pull(shapiro)
+```
+
+p-value = 0.4211
+
+-   La hipótesis nula (H₀): los datos siguen una distribución normal.
+
+    Como p-value \> 0.05, no hay evidencia suficiente para rechazar H₀.
+
+<!-- -->
+
+-    Los puntajes de resultado en el grupo donde un familiar completó la prueba no difieren significativamente de una distribución normal.
+
+```{r}
+data_autismo |> 
+  filter(Quien_completa_prueba == "Autocompletado") |> 
+  summarise(shapiro = list(shapiro.test(Resultado))) |> 
+  pull(shapiro)
+```
+
+p-value = 0.4211
+
+-   La hipótesis nula del test es que los datos siguen una distribución normal.
+
+    En este caso, el valor p es mayor a 0.05 entonces, no se rechaza la hipótesis nula. Los puntajes en el grupo Autocompletado sí podrían seguir una distribución normal.
+
+## 3.5 Realizamos la prueba de ANOVA de una vía para nuestros datos.
+
+```{r}
+res_anova = aov(Resultado ~ Quien_completa_prueba, data = data_autismo)
+```
+
+```{r}
+summary(res_anova)
+```
+
+INTERPRETACION:
+
+Valor p = 0.316 (\> 0.05). No hay evidencia estadísticamente significativa para rechazar la hipótesis nula.
+
+-   No hay diferencias significativas en los puntajes (Resultado) entre los distintos grupos de personas que completaron la prueba (Padre/Madre, Autocompletado, Familiar, etc.).
+
+<!-- -->
+
+-    Las medias entre los grupos pueden variar ligeramente, pero estas diferencias podrían deberse al azar y no son estadísticamente relevantes.
