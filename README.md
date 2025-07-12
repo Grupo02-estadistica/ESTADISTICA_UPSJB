@@ -11,6 +11,7 @@ Este repositorio contiene los archivos del análisis estadístico desarrollado d
 # Herramientas utilizadas
 R,RStudio, Git y GitHub
 # Autores
+GRUPO 2 - 
 Cardenas Sanchez Alai Alexis, 
 Cholán Sánchez Ariana Maricielo, 
 Perez Flores Andrea Ximena, 
